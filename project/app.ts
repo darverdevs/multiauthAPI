@@ -1,4 +1,5 @@
 const express = require('express');
+import { PrismaClient } from '@prisma/client'
 const app = express();
 const port = 3000;
 console.log("started")
