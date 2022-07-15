@@ -30,7 +30,9 @@ router.post("/login", async (req: Request, res: Response) => {
         });
 
     const user = await prisma.user.findUnique({
-        username,
+        where: {
+            username,
+        },
     });
 
     if (!user) // If a user by that username does not exist, return response with status 400 (Bad Request)
