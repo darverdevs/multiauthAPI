@@ -18,3 +18,10 @@ model User {
 
   @@map("users")
 }
+model Session {
+  token String @unique // The token for the string
+  uuid String // The account the session belongs to
+  expiresAt DateTime
+
+  @@map("sessions")
+}

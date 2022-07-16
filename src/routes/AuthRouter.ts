@@ -22,7 +22,8 @@ router.post("/login", async (req: Request, res: Response) => {
             success: false,
             message: "No request body specified.",
         });
-    const { username, password, session } = req.body; // Defines variables username and password from req.body
+    const { username, password } = req.body;
+     // Defines variables username and password from req.body
     console.log(username, password);
     if (!username || !password) // If the username or password field(s) are not specified in the request body, return response with status 400 (Bad Request)
         return res.status(400).json({
