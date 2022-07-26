@@ -103,7 +103,7 @@ router.post("/login", async (req: Request, res: Response) => {
 });
 
 router.post("/register", async (req: Request, res: Response) => {
-    const { username, password, uuid } = req.body;
+    const { username, password } = req.body;
 
     if (!username || !password){
         return res.status(400).json({
