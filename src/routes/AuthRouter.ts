@@ -1,63 +1,205 @@
 import { Router, Request, Response } from "express";
-import argon2 from "argon2";
-import { PrismaClient } from "@prisma/client";
-import { mainModule } from "process";
-const router = Router();
-const prisma = new PrismaClient(); 
+import argon2, { argon2id } from "argon2";
+import crypto from "crypto";
+import prisma from "../db";
+import blocklist from "../blocklist";
 
-router.get("/", (_req: Request, res: Response) => res.json({
+const router = Router();
+router.get("/", (_req: Request, res: Response) => {
+    console.log("GET /auth");
+    res.json({
     success: true,
     message: "Auth Endpoint.",
-}));
-router.get("/login", (_req: Request, res: Response) => res.json({
-    success: true,
-    message: "Login Endpoint."
-}));
+})});
 
 // POST auth/login
-router.post("/login", (req: Request, res: Response) => {
-    const headers = req.headers;
-    const username = headers.username;
-    const password = headers.password;
-    if (username == undefined){
-        res.status(400).json({
+router.post("/login", async (req: Request, res: Response) => {
+    console.log("POST /auth/login");
+    if (!req.body)
+        return res.status(400).json({
             success: false,
-            message: "Username is required.",
+            message: "No request body specified.",
         });
-    }
-    else if (password == undefined){
-        res.status(400).json({
-            success: false,
-            message: "Password is required.",
+    const { username, password, session } = req.body;
+     // Defines variables username and password from req.body
+    console.log(username, password);
+    if (!session){
+        if (!username || !password) // If the username or password field(s) are not specified in the request body, return response with status 400 (Bad Request)
+            return res.status(400).json({
+                success: false,
+                message: "One or more required fields were missing from the request body.",
+            });      
+        const user = await prisma.user.findUnique({
+            where: {
+                username,
+            },
+        });
+
+        if (!user) // If a user by that username does not exist, return response with status 400 (Bad Request)
+            return res.status(400).json({
+                success: false,
+                message: "Username or password is invalid.",
+            });
+        
+        const passwordMatches = await argon2.verify(user.password, password, {
+            type: argon2id,
+        });
+
+        if (!passwordMatches)
+            return res.status(400).json({
+                success: false,
+                message: "Username or password is invalid.",
+            });
+
+        // TODO - Create Session Cookie
+        return res.json({
+            success: true,
+            message: "Successfully logged in.",
+            data: { // For easier rendering on frontend. One less request!
+                uuid: user.uuid,
+                username: user.username,
+            },
         });
     }
     else{
-        const saltedPassword = "3ymzgPrdRAZ0yXmx" + password;
-        const hashedPassword = argon2.hash(saltedPassword);
-        async function getUser() {
-            const result = await prisma.user.findMany();
-            return result;
+        const sessionId = await prisma.session.findUnique({
+            where: {
+                token: session,
+            }
+        });
+        if (!sessionId)
+        {
+            return res.status(400).json({
+                success: false,
+                message: "Session is invalid.",
+            });
         }
-        getUser().then(result => {
-            if (result.length == 0){
-                res.status(400).json({
+        else{
+            const user = await prisma.user.findUnique({
+                where: {
+                    uuid: sessionId.uuid,
+                }
+            });
+            if (!user)
+            {
+                return res.status(400).json({
                     success: false,
-                    message: "No users found.",
+                    message: "User is invalid.",
                 });
             }
             else{
-                // Check if username and password match
-                const len_result = result.length;
-                for (let i = 0; i < len_result; i++){
-                    if (result[i].username == username){
-                            res.status(200).json({
-                                success: true,
-                                message: "Login successful.",
-                            });
-                    }
-                }
+                return res.json({
+                    success: true,
+                    message: "Successfully logged in.",
+                    data: { // For easier rendering on frontend. One less request!
+                        uuid: user.uuid,
+                        username: user.username,
+                    },
+                });
             }
+        }
+    }
+});
+
+router.post("/register", async (req: Request, res: Response) => {
+    console.log("POST /auth/register");
+    const { username, password } = req.body;
+
+    if (!username || !password){
+        return res.status(400).json({
+            success: false,
+            message: "One or more required fields were missing from the request body.",
+        });
+    }
+    // Check if username has blocked words
+    for (let i=0; i<blocklist.length; i++){
+        if (username.includes(blocklist[i])){
+            return res.status(400).json({
+                success: false,
+                message: "Username contains a blocked word.",
+            });
+        }
+    } 
+    // TODO - Check for valid password and username (no spaces, no special characters, etc.)
+    var passwordcheck = /(\s|[,])/;
+    const user = await prisma.user.findUnique({
+        where: {
+            username,
+        },
+    });
+    const uuidGen = crypto.randomUUID();
+    if (!user){
+        if (passwordcheck.test(password)){
+            return res.status(400).json({
+                success: false,
+                message: "Password has invalid characters",
+            });
+        }
+        if (password.length < 8){
+            return res.status(400).json({
+                success: false,
+                message: "Password needs to be at least 8 characters long",
+            });
+        }
+        if (username.length < 3 || username.length > 20){
+            return res.status(400).json({
+                success: false,
+                message: "Username must be between 3 and 20 characters long.",
+            });
+        }
+        const hashedPassword = await argon2.hash(password, {
+            type: argon2id,
+        });
+        const newUser = await prisma.user.create({
+            data: {
+                username,
+                password: hashedPassword,
+                uuid: uuidGen,
+            },
+        });
+        return res.json({
+            success: true,
+            message: "Successfully registered.",
+            data: {
+                uuid: newUser.uuid,
+                username: newUser.username,
+            },
+        });
+    }
+    else{
+        return res.status(400).json({
+            success: false,
+            message: "Username already exists.",
         });
     }
 });
+router.post("/isreg", async (req: Request, res: Response) => {
+    console.log("POST /auth/isreg");
+    const { username } = req.body;
+    if (!username){
+        return res.status(400).json({
+            success: false,
+            message: "One or more required fields were missing from the request body.",
+        });
+    }
+    const user = await prisma.user.findUnique({
+        where: {
+            username,
+        },
+    });
+    if (!user){
+        return res.json({
+            success: true,
+            isreg: false,
+            message: "Username is not registered.",
+        });
+    }
+    else{
+        return res.json({
+            success: true,
+            isreg: true,
+            message: "Username is already registered.",
+        });
+    }
+}); //TODO - Add sessions - 50%
 export default router;
