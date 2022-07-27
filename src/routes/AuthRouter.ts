@@ -5,17 +5,16 @@ import prisma from "../db";
 import blocklist from "../blocklist";
 
 const router = Router();
-router.get("/", (_req: Request, res: Response) => res.json({
+router.get("/", (_req: Request, res: Response) => {
+    console.log("GET /auth");
+    res.json({
     success: true,
     message: "Auth Endpoint.",
-}));
-router.get("/login", (_req: Request, res: Response) => res.json({
-    success: true,
-    message: "Login Endpoint."
-}));
+})});
 
 // POST auth/login
 router.post("/login", async (req: Request, res: Response) => {
+    console.log("POST /auth/login");
     if (!req.body)
         return res.status(400).json({
             success: false,
@@ -103,6 +102,7 @@ router.post("/login", async (req: Request, res: Response) => {
 });
 
 router.post("/register", async (req: Request, res: Response) => {
+    console.log("POST /auth/register");
     const { username, password } = req.body;
 
     if (!username || !password){
@@ -120,6 +120,8 @@ router.post("/register", async (req: Request, res: Response) => {
             });
         }
     } 
+    // TODO - Check for valid password and username (no spaces, no special characters, etc.)
+    var passwordcheck = /(\s|[,])/;
     const user = await prisma.user.findUnique({
         where: {
             username,
@@ -127,10 +129,16 @@ router.post("/register", async (req: Request, res: Response) => {
     });
     const uuidGen = crypto.randomUUID();
     if (!user){
+        if (passwordcheck.test(password)){
+            return res.status(400).json({
+                success: false,
+                message: "Password has invalid characters",
+            });
+        }
         if (password.length < 8){
             return res.status(400).json({
                 success: false,
-                message: "Password must be at least 8 characters long.",
+                message: "Password needs to be at least 8 characters long",
             });
         }
         if (username.length < 3 || username.length > 20){
@@ -166,6 +174,7 @@ router.post("/register", async (req: Request, res: Response) => {
     }
 });
 router.post("/isreg", async (req: Request, res: Response) => {
+    console.log("POST /auth/isreg");
     const { username } = req.body;
     if (!username){
         return res.status(400).json({
@@ -192,5 +201,5 @@ router.post("/isreg", async (req: Request, res: Response) => {
             message: "Username is already registered.",
         });
     }
-}); //TODO - Add sessions
+}); //TODO - Add sessions - 50%
 export default router;
