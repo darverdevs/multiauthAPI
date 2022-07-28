@@ -27,7 +27,10 @@ def register():
     username = request.form['username']
     password = request.form['password']
     confpassword = request.form['confopassword']
-    email = request.form['email']
+    try:
+        email = request.form['email']
+    except:
+        email = None
     if email == '' or email == None:
         email = None
     if password == '' or password == None:
