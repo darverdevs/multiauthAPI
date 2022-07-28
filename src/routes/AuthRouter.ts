@@ -103,7 +103,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
 router.post("/register", async (req: Request, res: Response) => {
     console.log("POST /auth/register");
-    const { username, password } = req.body;
+    const { username, password, email } = req.body;
 
     if (!username || !password){
         return res.status(400).json({
@@ -122,6 +122,7 @@ router.post("/register", async (req: Request, res: Response) => {
     } 
     // TODO - Check for valid password and username (no spaces, no special characters, etc.)
     var passwordcheck = /(\s|[,])/;
+    var emailcheck = /(@)/;
     const user = await prisma.user.findUnique({
         where: {
             username,
@@ -147,6 +148,12 @@ router.post("/register", async (req: Request, res: Response) => {
                 message: "Username must be between 3 and 20 characters long.",
             });
         }
+        if (username.includes(" ")){
+            return res.status(400).json({
+                success: false,
+                message: "Username cannot contain spaces.",
+            });
+        }
         const hashedPassword = await argon2.hash(password, {
             type: argon2id,
         });
@@ -154,8 +161,8 @@ router.post("/register", async (req: Request, res: Response) => {
             data: {
                 username,
                 password: hashedPassword,
-                uuid: uuidGen,
-            },
+                email: email ?? null,
+            }
         });
         return res.json({
             success: true,

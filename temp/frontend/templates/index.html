@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <!-- jquery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+<style>
+    .center {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+    .bgdark {
+        background-color: #000000;
+    }
+    .bgbox{
+        background-color: #222c36;
+        color: white;
+    }
+</style>
+<style type="text/css">
+    html, body, wrap {
+        margin:0;
+        padding:0;
+        height:100%;
+    }
+    body {
+        color:#fff;
+        background: #0a1e31;
+    }
+    .wrap {
+        display:table;
+        height:100%;
+        width:100%;
+    }
+    .tr { display:table-row; }
+    .tc {
+        display:table-cell;
+        vertical-align:middle;
+        width:100%;
+    }
+    .header { height:1px; }
+    .logo {
+        max-width:895px;
+        height:192px;
+        margin:57px auto 10px;
+    }
+    .content {
+        max-width:1150px;
+        margin:auto;
+        overflow:hidden;
+        text-align:center;
+    }
+</style>
+
+<body>
+    <div class="wrap">
+            <div class="tr header">
+                <br>
+                <p class="has-text-centered title has-text-white">Welcome to Multiauth</p>
+                <p class="has-text-centered subtitle has-text-white">Claim your account in the database!</p>
+                <br>
+                <!-- create a notification -->
+                {% if request.args.get("type") == "error" %}
+                    <div class="notification container is-danger">
+                        <button class="delete"></button>
+                        <p>{{request.args.get("message")}}</p>
+                    </div>
+                {% endif %}
+                {% if request.args.get("type") == "success" %}
+                    <div class="notification container is-success">
+                        <button class="delete"></button>
+                        <p>{{request.args.get("message")}}</p>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="tc main">
+                    <div class="content">
+                        <div class="box bgbox">
+                            <form class="form" action="/register" method="post"> 
+                                <div class="field">
+                                    <label class="label has-text-white">Username</label>
+                                    <div class="control">
+                                      <input class="input bgbox" style='color: white' type="text", name="username">
+                                    </div>
+                                  </div>
+
+                                    <div class="field">
+                                        <label class="label has-text-white">Password</label>
+                                        <div class="control">
+                                            <input class="input bgbox" style='color: white' type="password", name="password">
+                                        </div>
+                                    </div>
+
+                                    <div class="field">
+                                        <label class="label has-text-white">Confirm Password</label>
+                                        <div class="control">
+                                            <input class="input bgbox" style='color: white' type="password" name="confopassword">
+                                        </div>
+                                    </div>
+
+                                  <div class="field">
+                                    <label class="label has-text-white">Email (optional) </label>
+                                    <div class="control">
+                                      <input class="input bgbox" style='color: white' type="email" name="email">
+                                    </div>
+                                  </div>
+                                  <div class="field">
+                                    <div class="control">
+                                        <button class="button is-link">Submit</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+            </div>
+    </div>
+    
+    
+    </body>
