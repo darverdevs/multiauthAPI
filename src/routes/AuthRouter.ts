@@ -161,7 +161,7 @@ router.post("/register", async (req: Request, res: Response) => {
             data: {
                 username,
                 password: hashedPassword,
-                email: email ?? null,
+                email: email || "N/A",
             }
         });
         return res.json({
