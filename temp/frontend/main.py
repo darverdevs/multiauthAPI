@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import requests
+import json
+
 app = Flask(__name__)
 
 
@@ -10,7 +12,8 @@ def login(username, password, email):
     else:
         login_spec = {"username":username, "password":password, "email":email}
     # send login spec to server
-    r = requests.post("https://multiauth.us/register", json=login_spec)
+    r = requests.post("https://api.multiauth.us/auth/register", json=login_spec).json()
+    print(r)
     if r['success'] == True:
         return True
     else:
